@@ -6,95 +6,68 @@ CREATE SCHEMA IF NOT EXISTS `Ecommerce` DEFAULT CHARACTER SET utf8 ;
 USE `Ecommerce` ;
 
 -- -----------------------------------------------------
--- Table `Ecommerce`.`user`
+-- Table `Ecommerce`.`users`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`user` (
-  `user_id` INT NOT NULL,
+CREATE TABLE IF NOT EXISTS `Ecommerce`.`users` (
+  `id` INT NOT NULL,
   `name` VARCHAR(45) NOT NULL,
+  `role` VARCHAR(45) NOT NULL,
   `email_address` VARCHAR(45) NOT NULL,
   `password` VARCHAR(32) NOT NULL,
   `mobile_number` VARCHAR(45) NOT NULL,
   `address` VARCHAR(4) NOT NULL,
-  PRIMARY KEY (`user_id`),
-  UNIQUE INDEX `userID_UNIQUE` (`user_id` ASC))
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `userID_UNIQUE` (`id` ASC))
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `Ecommerce`.`payment_mode`
+-- Table `Ecommerce`.`payment_modes`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`payment_mode` (
-  `payment_id` INT NOT NULL,
-  `payment_method` VARCHAR(45) NULL DEFAULT NULL,
-  `payment_order_id` INT NULL,
-  PRIMARY KEY (`payment_id`),
-  INDEX `payment_order_id_idx` (`payment_order_id` ASC),
-  CONSTRAINT `payment_order_id`
-    FOREIGN KEY (`payment_order_id`)
-    REFERENCES `Ecommerce`.`order` (`order_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+CREATE TABLE IF NOT EXISTS `Ecommerce`.`payment_modes` (
+  `id` INT NOT NULL,
+  `payment_method` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `Ecommerce`.`product`
+-- Table `Ecommerce`.`products`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`product` (
-  `product_id` INT NOT NULL,
-  `product_name` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`product_id`))
+CREATE TABLE IF NOT EXISTS `Ecommerce`.`products` (
+  `id` INT NOT NULL,
+  `product_name` VARCHAR(64) NOT NULL,
+  PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `Ecommerce`.`order`
+-- Table `Ecommerce`.`orders`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`order` (
-  `order_id` INT NOT NULL,
-  `user_order_id` INT NOT NULL,
+CREATE TABLE IF NOT EXISTS `Ecommerce`.`orders` (
+  `id` INT NOT NULL,
+  `user_id` INT NOT NULL,
   `order_cost` FLOAT NULL DEFAULT NULL,
   `payment_id` INT NOT NULL,
   `product_id` INT NOT NULL,
-  PRIMARY KEY (`order_id`),
-  INDEX `user_order_id_idx` (`user_order_id` ASC),
+  `final_cost` FLOAT NULL,
+  PRIMARY KEY (`id`),
   INDEX `fk_order_1_idx` (`payment_id` ASC),
   INDEX `product_d_idx` (`product_id` ASC),
-  CONSTRAINT `user_order_id`
-    FOREIGN KEY (`user_order_id`)
-    REFERENCES `Ecommerce`.`buyer` (`buyer_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+  INDEX `user_id_idx` (`user_id` ASC),
   CONSTRAINT `payment_id`
     FOREIGN KEY (`payment_id`)
-    REFERENCES `Ecommerce`.`payment_mode` (`payment_id`)
+    REFERENCES `Ecommerce`.`payment_modes` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `product_d`
+  CONSTRAINT `product_id`
     FOREIGN KEY (`product_id`)
-    REFERENCES `Ecommerce`.`product` (`product_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `Ecommerce`.`buyer`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`buyer` (
-  `buyer_id` INT NOT NULL,
-  `order_id` INT NOT NULL,
-  PRIMARY KEY (`buyer_id`),
-  UNIQUE INDEX `buyerID_UNIQUE` (`buyer_id` ASC),
-  UNIQUE INDEX `orderID_UNIQUE` (`order_id` ASC),
-  CONSTRAINT `buyer_id`
-    FOREIGN KEY (`buyer_id`)
-    REFERENCES `Ecommerce`.`user` (`user_id`)
+    REFERENCES `Ecommerce`.`products` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `order_id`
-    FOREIGN KEY (`order_id`)
-    REFERENCES `Ecommerce`.`order` (`order_id`)
+  CONSTRAINT `user_id`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `Ecommerce`.`users` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -104,65 +77,50 @@ ENGINE = InnoDB;
 -- Table `Ecommerce`.`product_details`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `Ecommerce`.`product_details` (
-  `product_details_id` INT NOT NULL,
-  `product_order_id` INT NOT NULL,
-  `product_color` VARCHAR(45) NULL DEFAULT NULL,
+  `color_id` INT NOT NULL,
+  `product_id` INT NOT NULL,
+  `product_color` VARCHAR(45) NOT NULL,
   `product_price` FLOAT NOT NULL,
-  `productStock` INT NULL DEFAULT NULL,
-  PRIMARY KEY (`product_details_id`),
-  CONSTRAINT `product_details_id`
-    FOREIGN KEY (`product_details_id`)
-    REFERENCES `Ecommerce`.`product` (`product_id`)
+  `product_stock` INT NOT NULL,
+  PRIMARY KEY (`color_id`),
+  CONSTRAINT `product_id`
+    FOREIGN KEY (`color_id`)
+    REFERENCES `Ecommerce`.`products` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `Ecommerce`.`credit_card`
+-- Table `Ecommerce`.`credit_cards`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`credit_card` (
-  `credit_payment_id` INT NOT NULL,
+CREATE TABLE IF NOT EXISTS `Ecommerce`.`credit_cards` (
   `credit_card_no` INT NOT NULL,
+  `credit_payment_id` INT NOT NULL,
   `expiry_date` DATE NOT NULL,
   `card_name` VARCHAR(45) NOT NULL,
   INDEX `credit_payment_id_idx` (`credit_payment_id` ASC),
   CONSTRAINT `credit_payment_id`
     FOREIGN KEY (`credit_payment_id`)
-    REFERENCES `Ecommerce`.`payment_mode` (`payment_id`)
+    REFERENCES `Ecommerce`.`payment_modes` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `Ecommerce`.`discount`
+-- Table `Ecommerce`.`discounts`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`discount` (
-  `discount_id` INT NOT NULL,
-  `payment_id` INT NULL DEFAULT NULL,
-  `amount` FLOAT NULL DEFAULT NULL,
-  `discount_code` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`discount_id`),
+CREATE TABLE IF NOT EXISTS `Ecommerce`.`discounts` (
+  `id` INT NOT NULL,
+  `payment_id` INT NOT NULL,
+  `amount` FLOAT NOT NULL,
+  `coupon_code` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`id`),
   INDEX `payment_id_idx` (`payment_id` ASC),
   CONSTRAINT `payment_id`
     FOREIGN KEY (`payment_id`)
-    REFERENCES `Ecommerce`.`payment_mode` (`payment_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `Ecommerce`.`inventory_manager`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `Ecommerce`.`inventory_manager` (
-  `inventory_manager_id` INT NOT NULL,
-  `inventory_id` INT NULL DEFAULT NULL,
-  PRIMARY KEY (`inventory_manager_id`),
-  CONSTRAINT `inventory_manager_id`
-    FOREIGN KEY (`inventory_manager_id`)
-    REFERENCES `Ecommerce`.`user` (`user_id`)
+    REFERENCES `Ecommerce`.`payment_modes` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
