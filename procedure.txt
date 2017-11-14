@@ -1,0 +1,87 @@
+
+
+-------------------------------------------------------------------------------------------------------------------------------------
+DELIMITER $$
+CREATE PROCEDURE check_payments(IN payment_id int(11),IN order_id int(11),IN payment_type varchar(20),IN discount_coupon decimal(3,2),IN checkout_price decimal(10,2),IN payment_date date,IN payment_status varchar(20),IN created datetime,updated timestamp)
+BEGIN
+DECLARE payment_check BOOL DEFAULT 0;
+DECLARE  CONTINUE HANDLER FOR SQLEXCEPTION SET payment_check=1;
+START TRANSACTION;
+INSERT INTO payments   (id,order_id,payment_type,discount_coupon,checkout_price,payment_date,payment_status,created,updated) values (payment_id,order_id,payment_type,discount_coupon,checkout_price,payment_date,payment_status,created,updated);
+IF payment_check THEN
+   rollback;     
+ELSE
+   commit;
+END IF;
+END$$
+DELIMITER ;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE VIEW payments_view 
+AS SELECT e.id,e.final_cost,e.order_date,f.discount_coupon,f.payment_type,f.payment_status FROM orders e,payments f WHERE e.id=f.order_id;
+
+----------------------------------------------------------------------------------------------------------------------------------------
+DELIMITER $$
+CREATE PROCEDURE fill_order_history()
+BEGIN
+   INSERT INTO order_history
+   SELECT * FROM carts;
+   TRUNCATE TABLE carts;    
+END$$
+----------------------------------------------------------------------------------------------------------------------------------------
+
+
+DELIMITER $$
+CREATE PROCEDURE get_final_cost()
+BEGIN
+DECLARE user_count INT DEFAULT 0;
+DECLARE x INTEGER;
+DECLARE updated_cost INTEGER;
+SET user_count = 1;
+SET x = (SELECT COUNT(*) FROM orders);
+WHILE(user_count <=  x) DO
+ select sum((carts.product_quantity * variants.price)) into updated_cost from carts,variants where carts.variant_id = variants.id AND carts.user_id = user_count;
+ UPDATE orders SET orders.final_cost = updated_cost where orders.user_id = user_count;
+ SET user_count = user_count + 1;
+END WHILE;
+END;
+$$
+DELIMITER ;
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+DELIMITER $$
+CREATE PROCEDURE calculate_checkout_cost()
+
+BEGIN
+
+DECLARE total_sum  INTEGER;
+DECLARE order_count INTEGER;
+DECLARE x INTEGER DEFAULT 1;
+DECLARE discount_amt INTEGER;
+DECLARE pay_amt INTEGER;
+DECLARE final_amt INTEGER;
+
+set order_count = (select count(*) from payments);
+while(x <= order_count) do
+set discount_amt = (select discount_coupon from payments where payments.id=x);
+set total_sum = (select final_cost from orders where orders.id=x);
+set pay_amt = ((discount_amt/100)*total_sum);
+set final_amt=(total_sum - pay_amt);
+update payments set payments.checkout_price = final_amt where payments.order_id =  x   ;
+set x=x+1;
+END WHILE ;
+
+END$$
+DELIMITER ;
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW monthly_report AS SELECT e.id,e.order_date,p.product_name,v.price,x.checkout_price,u.username,u.email FROM orders e, products p, variants v, payments x, users u, order_history o WHERE o.user_id=u.id AND o.variant_id=v.id AND o.product_id=p.id AND o.order_id=e.id AND o.order_id=x.order_id;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
