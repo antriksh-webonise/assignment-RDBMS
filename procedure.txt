@@ -1,7 +1,27 @@
-
-
--------------------------------------------------------------------------------------------------------------------------------------
 DELIMITER $$
+DROP PROCEDURE IF EXISTS add_user $$
+CREATE PROCEDURE add_user(IN user_id int(11),IN role varchar(20),IN email varchar(20),IN password varchar(15),IN username varchar(20),IN contact varchar(10),IN address varchar(20),IN created datetime,updated timestamp)
+BEGIN
+INSERT INTO users(id,role,email,password,username,contact,address,created,updated) values (user_id,role,email,password,username,contact,address,created,updated);
+END$$
+DELIMITER ;
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS add_products $$
+CREATE PROCEDURE add_products(IN product_id int(11),IN product_name varchar(20),IN created datetime,updated timestamp)
+BEGIN
+INSERT INTO products(id,product_name,created,updated) values (product_id,product_name,created,updated);
+END$$
+DELIMITER ;
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS check_payments $$
 CREATE PROCEDURE check_payments(IN payment_id int(11),IN order_id int(11),IN payment_type varchar(20),IN discount_coupon decimal(3,2),IN checkout_price decimal(10,2),IN payment_date date,IN payment_status varchar(20),IN created datetime,updated timestamp)
 BEGIN
 DECLARE payment_check BOOL DEFAULT 0;
@@ -16,24 +36,26 @@ END IF;
 END$$
 DELIMITER ;
 
-
-----------------------------------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 CREATE VIEW payments_view 
 AS SELECT e.id,e.final_cost,e.order_date,f.discount_coupon,f.payment_type,f.payment_status FROM orders e,payments f WHERE e.id=f.order_id;
 
-----------------------------------------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
 DELIMITER $$
+DROP PROCEDURE IF EXISTS fill_order_history $$
 CREATE PROCEDURE fill_order_history()
 BEGIN
    INSERT INTO order_history
    SELECT * FROM carts;
    TRUNCATE TABLE carts;    
 END$$
-----------------------------------------------------------------------------------------------------------------------------------------
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DELIMITER $$
+DROP PROCEDURE IF EXISTS get_final_cost $$
 CREATE PROCEDURE get_final_cost()
 BEGIN
 DECLARE user_count INT DEFAULT 0;
@@ -50,38 +72,37 @@ END;
 $$
 DELIMITER ;
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
 DELIMITER $$
+DROP PROCEDURE IF EXISTS calculate_checkout_cost $$
 CREATE PROCEDURE calculate_checkout_cost()
 
 BEGIN
-
 DECLARE total_sum  INTEGER;
 DECLARE order_count INTEGER;
 DECLARE x INTEGER DEFAULT 1;
 DECLARE discount_amt INTEGER;
 DECLARE pay_amt INTEGER;
 DECLARE final_amt INTEGER;
-
 set order_count = (select count(*) from payments);
 while(x <= order_count) do
-set discount_amt = (select discount_coupon from payments where payments.id=x);
-set total_sum = (select final_cost from orders where orders.id=x);
-set pay_amt = ((discount_amt/100)*total_sum);
-set final_amt=(total_sum - pay_amt);
-update payments set payments.checkout_price = final_amt where payments.order_id =  x   ;
-set x=x+1;
+  set discount_amt = (select discount_coupon from payments where payments.id=x);
+  set total_sum = (select final_cost from orders where orders.id=x);
+  set pay_amt = ((discount_amt/100)*total_sum);
+  set final_amt=(total_sum - pay_amt);
+  update payments set payments.checkout_price = final_amt where payments.order_id =  x   ;
+  set x=x+1;
 END WHILE ;
-
 END$$
 DELIMITER ;
 
--------------------------------------------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 CREATE OR REPLACE VIEW monthly_report AS SELECT e.id,e.order_date,p.product_name,v.price,x.checkout_price,u.username,u.email FROM orders e, products p, variants v, payments x, users u, order_history o WHERE o.user_id=u.id AND o.variant_id=v.id AND o.product_id=p.id AND o.order_id=e.id AND o.order_id=x.order_id;
 
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 
